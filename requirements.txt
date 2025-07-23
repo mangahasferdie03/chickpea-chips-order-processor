@@ -1,0 +1,5 @@
+streamlit>=1.28.0
+anthropic>=0.3.0
+python-dotenv>=1.0.0
+gspread>=5.7.0
+google-auth>=2.16.0
