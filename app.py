@@ -978,17 +978,12 @@ def main():
                 st.subheader("📋 Order Items")
                 total_items = 0
                 for item in parsed_order.items:
-                    st.write(f"• **{item.product.name} {item.product.size}** ({item.product.code})")
-                    st.write(f"  Quantity: {item.quantity} × ₱{item.product.price} = ₱{item.quantity * item.product.price}")
+                    total_item_price = item.quantity * item.product.price
+                    st.text(f"{item.product.name} {item.product.size} - {item.quantity} - ₱{total_item_price:,}")
                     total_items += item.quantity
                 
-                # Display totals
-                st.divider()
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    st.metric("Total Items", total_items)
-                with col_b:
-                    st.metric("Total Amount", f"₱{parsed_order.total_amount}")
+                st.text("----------")
+                st.text(f"Total - ₱{parsed_order.total_amount:,}")
                 
                 # Export data
                 order_data = {
