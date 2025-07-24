@@ -576,7 +576,7 @@ class GoogleSheetsIntegration:
             update_data = {}
             
             # Column C: Order Date
-            update_data['C'] = today.strftime("%Y-%m-%d")
+            update_data['C'] = today.strftime("%m/%d/%Y")
             
             # Column D: Customer Name
             update_data['D'] = parsed_order.customer_name or "Unknown"
@@ -675,7 +675,7 @@ class GoogleSheetsIntegration:
             row_data = [""] * 28
             
             # Fill in the data at correct indices
-            row_data[2] = today.strftime("%Y-%m-%d")      # Column C
+            row_data[2] = today.strftime("%m/%d/%Y")      # Column C
             row_data[3] = parsed_order.customer_name or "Unknown"  # Column D
             row_data[4] = sold_by                         # Column E
             row_data[7] = "Unpaid"                        # Column H
@@ -781,7 +781,7 @@ class GoogleSheetsIntegration:
             updates = {}
             
             # Basic order info - only update these specific columns
-            updates['C'] = today.strftime("%Y-%m-%d")                    # Column C: Date
+            updates['C'] = today.strftime("%m/%d/%Y")                    # Column C: Date
             updates['D'] = parsed_order.customer_name or "Unknown"       # Column D: Customer
             
             # Sold By - only update if location was detected and seller assigned
@@ -794,8 +794,9 @@ class GoogleSheetsIntegration:
             if parsed_order.payment_method:
                 updates['G'] = parsed_order.payment_method               # Column G: Payment Method
             
-            # Fun note - add robot emoji to indicate web app processing
-            updates['J'] = "🤖"                                          # Column J: Notes (robot emoji)
+            # Fun note - add robot emoji with timestamp to indicate web app processing
+            current_time = datetime.now().strftime("%I:%M %p")  # 12-hour format with AM/PM
+            updates['J'] = f"🤖 {current_time}"                         # Column J: Notes with timestamp
             
             # Order type - always set to Reserved for all web orders
             updates['K'] = "Reserved"                                    # Column K: Note (always Reserved)
@@ -1050,7 +1051,7 @@ def main():
                     with st.expander("🔍 Preview Order Data"):
                         preview_data = {
                             "Row": target_row,
-                            "Order Date": datetime.now().strftime('%Y-%m-%d'),
+                            "Order Date": datetime.now().strftime('%m/%d/%Y'),
                             "Customer Name": parsed_order.customer_name or 'Unknown',
                             "Sold By": parsed_order.auto_sold_by or "Not assigned",
                             "Payment Method": parsed_order.payment_method or "Not specified",
