@@ -16,7 +16,7 @@ load_dotenv()
 
 # Configure page
 st.set_page_config(
-    page_title="Chickpea Chips Order Processor",
+    page_title="Preetos.ai",
     page_icon="🍟",
     layout="wide"
 )
@@ -838,8 +838,7 @@ class GoogleSheetsIntegration:
 
 
 def main():
-    st.title("Chickpea Chips Order Processor")
-    st.markdown("### Automated Facebook Messenger Order Processing")
+    st.title("Preetos.ai")
     
     # Sidebar for API configuration
     with st.sidebar:
@@ -906,34 +905,43 @@ def main():
     with col1:
         st.header("Customer Message")
         
-        # Initialize session state for message content
-        if 'message_content' not in st.session_state:
-            st.session_state.message_content = ""
+        # Initialize clear flag
+        if 'clear_pressed' not in st.session_state:
+            st.session_state.clear_pressed = False
+        
+        # Reset message content if clear was pressed
+        if st.session_state.clear_pressed:
+            st.session_state.clear_pressed = False
+            message_value = ""
+        else:
+            # Use existing value if any
+            message_value = st.session_state.get("message_input", "")
         
         message_input = st.text_area(
             "Paste Facebook Messenger conversation:",
-            value=st.session_state.message_content,
+            value=message_value,
             key="message_input",
             height=300,
             placeholder="Paste the customer's message here...\n\nEnglish: Hi! I'd like 2 cheese pouches and 1 BBQ tub please. For Maria Santos.\n\nTaglish: pwede bang dalawang cheese tub at isang sour cream pouch po para kay Juan"
         )
         
-        # Update session state when text changes
-        st.session_state.message_content = message_input
         
         # Create columns for buttons
         btn_col1, btn_col2 = st.columns([3, 1])
         with btn_col1:
             process_button = st.button("🔄 Process Order", type="primary", use_container_width=True)
         with btn_col2:
-            if st.button("Clear", use_container_width=True):
-                st.session_state.message_content = ""  # Clear the content
+            if st.button("🔥", use_container_width=True, help="Clear message"):
+                st.session_state.clear_pressed = True
                 st.rerun()  # Refresh to show cleared state
     
     with col2:
         st.header("Parsed Order Results")
         
-        if process_button and message_input.strip():
+        # Use message input for processing
+        input_to_process = message_input.strip()
+        
+        if process_button and input_to_process:
             with st.spinner("Processing order..."):
                 # Silently get fresh row number from Google Sheets
                 if spreadsheet_id:
@@ -957,7 +965,7 @@ def main():
                 
                 # Parse the order silently
                 parser = OrderParser()  # API key auto-loaded from file
-                parsed_order = parser.parse_order_with_claude(message_input)
+                parsed_order = parser.parse_order_with_claude(input_to_process)
                 
                 # Store in session state so it persists across button clicks
                 st.session_state.parsed_order = parsed_order
