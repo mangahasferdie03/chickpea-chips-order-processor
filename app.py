@@ -146,8 +146,8 @@ class OrderParser:
             You are an expert at parsing Filipino-English (Taglish) customer orders for chickpea chips from Facebook Messenger. 
 
             PRODUCTS AVAILABLE:
-            - Pouches (₱150 each): Cheese (P-CHZ), Sour Cream (P-SC), BBQ (P-BBQ), Original (P-OG)
-            - Tubs (₱290 each): Cheese (2L-CHZ), Sour Cream (2L-SC), BBQ (2L-BBQ), Original (2L-OG)
+            - Pouches/100g (₱150 each): Cheese (P-CHZ), Sour Cream (P-SC), BBQ (P-BBQ), Original (P-OG)
+            - Tubs/200g (₱290 each): Cheese (2L-CHZ), Sour Cream (2L-SC), BBQ (2L-BBQ), Original (2L-OG)
 
             FILIPINO NUMBER WORDS TO RECOGNIZE:
             - isa/isang = 1, dalawa/dalawang = 2, tatlo/tatlong = 3, apat = 4, lima/limang = 5
@@ -158,8 +158,13 @@ class OrderParser:
             - "sour cream/sour/sc" = Sour Cream flavor  
             - "bbq/barbeque/barbecue" = BBQ flavor
             - "original/plain/orig" = Original flavor
-            - "pouch/maliit" = small size, "tub/malaki" = large size
+            - "pouch/maliit/100g/100 grams" = small size, "tub/malaki/200g/200 grams" = large size
             - Casual terms: "chips", "chickpea chips", etc.
+
+            GRAM-BASED SIZE RECOGNITION:
+            - "100g", "100 grams", "100g lang", "100 grams po" → Pouch size (₱150)
+            - "200g", "200 grams", "200g naman", "200 grams po" → Tub size (₱290)
+            - Examples: "2 x 100g cheese", "isang 200g BBQ", "100 grams sour cream"
 
             FILIPINO/CASUAL EXPRESSIONS TO HANDLE:
             - Politeness: "po", "please", "pwede", "pwede ba"
@@ -963,7 +968,7 @@ def main():
                 total_items = 0
                 for item in parsed_order.items:
                     total_item_price = item.quantity * item.product.price
-                    st.text(f"{item.product.name} {item.product.size} - {item.quantity} - ₱{total_item_price:,}")
+                    st.text(f"{item.product.size} {item.product.name} - {item.quantity} - ₱{total_item_price:,}")
                     total_items += item.quantity
                 
                 st.text("----------")
@@ -974,7 +979,7 @@ def main():
                 order_lines = []
                 for item in parsed_order.items:
                     total_item_price = item.quantity * item.product.price
-                    order_lines.append(f"{item.product.name} {item.product.size} - {item.quantity} - ₱{total_item_price:,}")
+                    order_lines.append(f"{item.product.size} {item.product.name} - {item.quantity} - ₱{total_item_price:,}")
                 
                 order_lines.append("----------")
                 order_lines.append(f"Total - ₱{parsed_order.total_amount:,}")
