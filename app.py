@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import anthropic
 from dotenv import load_dotenv
 from datetime import datetime
+import pytz
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -563,7 +564,7 @@ class GoogleSheetsIntegration:
         """Update a specific row with order data with comprehensive logging"""
         try:
             st.info(f"🔄 Starting update_order_row for row {row_number}")
-            today = datetime.now()
+            today = datetime.now(pytz.timezone('Asia/Manila'))
             
             # Log connection status
             if not self.worksheet:
@@ -669,7 +670,7 @@ class GoogleSheetsIntegration:
         """Alternative batch update method"""
         try:
             st.info(f"🔄 Starting batch update for row {row_number}")
-            today = datetime.now()
+            today = datetime.now(pytz.timezone('Asia/Manila'))
             
             # Prepare row data (28 columns to match sheet structure)
             row_data = [""] * 28
@@ -775,7 +776,7 @@ class GoogleSheetsIntegration:
     def update_order_simple(self, parsed_order: ParsedOrder, row_number: int, sold_by: str = "") -> bool:
         """Clean, simple update method that only updates specific columns"""
         try:
-            today = datetime.now()
+            today = datetime.now(pytz.timezone('Asia/Manila'))
             
             # Update only specific cells instead of entire row to avoid overwriting formulas
             updates = {}
@@ -795,7 +796,7 @@ class GoogleSheetsIntegration:
                 updates['G'] = parsed_order.payment_method               # Column G: Payment Method
             
             # Fun note - add robot emoji with timestamp to indicate web app processing
-            current_time = datetime.now().strftime("%I:%M %p")  # 12-hour format with AM/PM
+            current_time = datetime.now(pytz.timezone('Asia/Manila')).strftime("%I:%M %p")  # 12-hour format with AM/PM
             updates['J'] = f"🤖 {current_time}"                         # Column J: Notes with timestamp
             
             # Order type - always set to Reserved for all web orders
@@ -1059,7 +1060,7 @@ def main():
                     with st.expander("🔍 Preview Order Data"):
                         preview_data = {
                             "Row": target_row,
-                            "Order Date": datetime.now().strftime('%m/%d/%Y'),
+                            "Order Date": datetime.now(pytz.timezone('Asia/Manila')).strftime('%m/%d/%Y'),
                             "Customer Name": parsed_order.customer_name or 'Unknown',
                             "Sold By": parsed_order.auto_sold_by or "Not assigned",
                             "Payment Method": parsed_order.payment_method or "Not specified",
