@@ -905,14 +905,29 @@ def main():
     with col1:
         st.header("Customer Message")
         
+        # Initialize session state for message content
+        if 'message_content' not in st.session_state:
+            st.session_state.message_content = ""
         
         message_input = st.text_area(
             "Paste Facebook Messenger conversation:",
+            value=st.session_state.message_content,
+            key="message_input",
             height=300,
             placeholder="Paste the customer's message here...\n\nEnglish: Hi! I'd like 2 cheese pouches and 1 BBQ tub please. For Maria Santos.\n\nTaglish: pwede bang dalawang cheese tub at isang sour cream pouch po para kay Juan"
         )
         
-        process_button = st.button("🔄 Process Order", type="primary", use_container_width=True)
+        # Update session state when text changes
+        st.session_state.message_content = message_input
+        
+        # Create columns for buttons
+        btn_col1, btn_col2 = st.columns([3, 1])
+        with btn_col1:
+            process_button = st.button("🔄 Process Order", type="primary", use_container_width=True)
+        with btn_col2:
+            if st.button("Clear", use_container_width=True):
+                st.session_state.message_content = ""  # Clear the content
+                st.rerun()  # Refresh to show cleared state
     
     with col2:
         st.header("Parsed Order Results")
@@ -965,11 +980,22 @@ def main():
                 
                 # Display order items
                 st.subheader("Order Items")
-                total_items = 0
-                for item in parsed_order.items:
+                
+                # Calculate total items
+                total_items = sum(item.quantity for item in parsed_order.items)
+                
+                # Mini dashboard with metrics
+                metric_col1, metric_col2 = st.columns(2)
+                with metric_col1:
+                    st.metric("Items", total_items)
+                with metric_col2:
+                    st.metric("Amount", f"₱{parsed_order.total_amount:,}")
+                
+                # Sort items: pouches first, then tubs
+                sorted_items = sorted(parsed_order.items, key=lambda x: 0 if x.product.size == "Pouch" else 1)
+                for item in sorted_items:
                     total_item_price = item.quantity * item.product.price
                     st.text(f"{item.product.size} {item.product.name} - {item.quantity} - ₱{total_item_price:,}")
-                    total_items += item.quantity
                 
                 st.text("----------")
                 st.text(f"Total - ₱{parsed_order.total_amount:,}")
@@ -977,7 +1003,9 @@ def main():
                 # Copy button below the total
                 # Generate copyable order text
                 order_lines = []
-                for item in parsed_order.items:
+                # Sort items: pouches first, then tubs
+                sorted_items = sorted(parsed_order.items, key=lambda x: 0 if x.product.size == "Pouch" else 1)
+                for item in sorted_items:
                     total_item_price = item.quantity * item.product.price
                     order_lines.append(f"{item.product.size} {item.product.name} - {item.quantity} - ₱{total_item_price:,}")
                 
