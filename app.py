@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1
 import json
 import re
 import os
@@ -16,7 +17,7 @@ load_dotenv()
 # Configure page
 st.set_page_config(
     page_title="Chickpea Chips Order Processor",
-    page_icon="🥨",
+    page_icon="🍟",
     layout="wide"
 )
 
@@ -343,16 +344,23 @@ class OrderParser:
         
         # Extract customer name (basic attempt)
         name_patterns = [
-            r'from\s+([A-Za-z\s]+)',
-            r'([A-Za-z\s]+)\s+ordered',
-            r'customer:\s*([A-Za-z\s]+)',
+            r'for\s+([A-Za-z\s]+)',           # "for nina"
+            r'para\s+(sa\s+)?([A-Za-z\s]+)', # "para nina" or "para sa nina"
+            r'kay\s+([A-Za-z\s]+)',          # "kay nina"
+            r'from\s+([A-Za-z\s]+)',         # "from nina"
+            r'([A-Za-z\s]+)\s+ordered',      # "nina ordered"
+            r'customer:\s*([A-Za-z\s]+)',    # "customer: nina"
         ]
         
         customer_name = None
         for pattern in name_patterns:
             match = re.search(pattern, message, re.IGNORECASE)
             if match:
-                customer_name = match.group(1).strip()
+                # Handle the "para sa" pattern which has 2 groups
+                if 'para' in pattern:
+                    customer_name = (match.group(2).strip() if match.group(2) else match.group(1).strip()).title()
+                else:
+                    customer_name = match.group(1).strip().title()
                 break
         
         total = sum(item.quantity * item.product.price for item in items)
@@ -422,9 +430,14 @@ class OrderParser:
         elif location == 'Paranaque':
             auto_sold_by = 'Nina'
         
+        # Format customer name with proper capitalization
+        customer_name = data.get('customer_name')
+        if customer_name:
+            customer_name = customer_name.strip().title()
+        
         # Create enhanced ParsedOrder with additional Claude data
         order = ParsedOrder(
-            customer_name=data.get('customer_name'),
+            customer_name=customer_name,
             items=items,
             total_amount=total,
             raw_message=raw_message,
@@ -819,7 +832,7 @@ class GoogleSheetsIntegration:
 
 
 def main():
-    st.title("🥨 Chickpea Chips Order Processor")
+    st.title("Chickpea Chips Order Processor")
     st.markdown("### Automated Facebook Messenger Order Processing")
     
     # Sidebar for API configuration
@@ -856,7 +869,7 @@ def main():
         st.divider()
         
         # Google Sheets Configuration
-        st.header("📊 Google Sheets Integration")
+        st.header("Google Sheets Integration")
         spreadsheet_id = st.text_input(
             "Google Sheets ID", 
             value="1DGt5u6QWWIMRZmU1MzfM3sowFPt9lOJPAgjqxZ6uGtc",
@@ -885,29 +898,8 @@ def main():
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.header("📝 Customer Message")
+        st.header("Customer Message")
         
-        # Show example messages
-        with st.expander("💡 See Filipino-English Example Messages"):
-            st.markdown("""
-            **English Examples:**
-            - "Hi! I'd like to order 2 cheese pouches and 1 BBQ tub please. This is for Maria Santos."
-            - "Can I get 3 sour cream chips and 2 original tubs?"
-            
-            **Filipino-English (Taglish) Examples:**
-            - "pwede bang dalawang cheese tub at isang sour cream pouch po"
-            - "hey gusto ko tatlong BBQ please, yung malaki ha para kay Maria"  
-            - "isa lang cheese chips tsaka 2 original tub"
-            - "mga 3 keso please, yung maliit lang, order ni Juan"
-            - "dalawang malaki BBQ tsaka isang maliit cheese po"
-            
-            **Order Modifications/Corrections (Fixed!):**
-            - "gusto ko 2 cheese tub... wait hindi, make it 3 BBQ pouch na lang po"
-            - "pwede bang 3 sour cream tub... actually scratch that, 2 original pouch para kay Maria"
-            - "isa cheese tub tsaka dalawang BBQ... ay hindi pala, palit ko ng tatlong cheese pouch"
-            - "5 original tub please... wait wag na, mas gusto ko 2 cheese tub at 1 sour cream pouch"
-            - "dalawang BBQ pouch... dagdag pa ng isang cheese tub" (addition, not replacement)
-            """)
         
         message_input = st.text_area(
             "Paste Facebook Messenger conversation:",
@@ -918,7 +910,7 @@ def main():
         process_button = st.button("🔄 Process Order", type="primary", use_container_width=True)
     
     with col2:
-        st.header("📊 Parsed Order Results")
+        st.header("Parsed Order Results")
         
         if process_button and message_input.strip():
             with st.spinner("Processing order..."):
@@ -954,28 +946,20 @@ def main():
             parsed_order = st.session_state.parsed_order
             
             if parsed_order.items:
-                # Display customer info
-                if parsed_order.customer_name:
-                    st.success(f"**Customer:** {parsed_order.customer_name}")
-                else:
-                    st.warning("**Customer:** Name not detected")
+                # Display customer info in vertical layout with leading status indicators
+                st.subheader("Order Summary")
                 
-                # Display payment method
-                if parsed_order.payment_method:
-                    st.success(f"**Payment Method:** {parsed_order.payment_method}")
-                else:
-                    st.info("**Payment Method:** Not specified")
+                # Create vertical info display with leading status indicators
+                customer_info = f"{'🟢' if parsed_order.customer_name else '🔘'} Customer: {parsed_order.customer_name or '—'}"
+                payment_info = f"{'🟢' if parsed_order.payment_method else '🔘'} Payment: {parsed_order.payment_method or '—'}"
+                location_info = f"{'🟢' if parsed_order.customer_location else '🔘'} Location: {parsed_order.customer_location or '—'}"
                 
-                # Display location and assigned seller
-                if parsed_order.customer_location and parsed_order.auto_sold_by:
-                    st.success(f"**Location:** {parsed_order.customer_location}")
-                    st.success(f"**Assigned to:** {parsed_order.auto_sold_by}")
-                else:
-                    st.info("**Location:** Not specified")
-                    st.info("**Assigned to:** Not assigned")
+                st.markdown(f"**{customer_info}**")
+                st.markdown(f"**{payment_info}**")
+                st.markdown(f"**{location_info}**")
                 
                 # Display order items
-                st.subheader("📋 Order Items")
+                st.subheader("Order Items")
                 total_items = 0
                 for item in parsed_order.items:
                     total_item_price = item.quantity * item.product.price
@@ -985,36 +969,45 @@ def main():
                 st.text("----------")
                 st.text(f"Total - ₱{parsed_order.total_amount:,}")
                 
-                # Export data
-                order_data = {
-                    "customer_name": parsed_order.customer_name,
-                    "payment_method": parsed_order.payment_method,
-                    "customer_location": parsed_order.customer_location,
-                    "auto_sold_by": parsed_order.auto_sold_by,
-                    "items": [
-                        {
-                            "product_code": item.product.code,
-                            "product_name": f"{item.product.name} {item.product.size}",
-                            "quantity": item.quantity,
-                            "unit_price": item.product.price,
-                            "total_price": item.quantity * item.product.price
-                        }
-                        for item in parsed_order.items
-                    ],
-                    "total_amount": parsed_order.total_amount,
-                    "total_items": total_items
-                }
+                # Copy button below the total
+                # Generate copyable order text
+                order_lines = []
+                for item in parsed_order.items:
+                    total_item_price = item.quantity * item.product.price
+                    order_lines.append(f"{item.product.name} {item.product.size} - {item.quantity} - ₱{total_item_price:,}")
                 
-                st.download_button(
-                    "📥 Download Order JSON",
-                    data=json.dumps(order_data, indent=2),
-                    file_name="order.json",
-                    mime="application/json"
-                )
+                order_lines.append("----------")
+                order_lines.append(f"Total - ₱{parsed_order.total_amount:,}")
+                copyable_text = "\n".join(order_lines)
+                
+                # Auto-copy to clipboard button
+                copy_button_html = f"""
+                <script>
+                function copyToClipboard() {{
+                    const text = `{copyable_text}`;
+                    navigator.clipboard.writeText(text).then(function() {{
+                        // Silent success - no alert needed
+                    }}).catch(function(err) {{
+                        console.error('Could not copy text: ', err);
+                        alert('Copy failed. Please try again.');
+                    }});
+                }}
+                </script>
+                <button onclick="copyToClipboard()" style="
+                    background-color: #ff4b4b;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">Copy</button>
+                """
+                st.components.v1.html(copy_button_html, height=50)
                 
                 # Google Sheets Integration
                 st.divider()
-                st.subheader("📊 Google Sheets Integration")
+                st.subheader("Google Sheets Integration")
                     
                 if spreadsheet_id:  # Only need spreadsheet ID
                     # Get the row number that was detected during order processing
